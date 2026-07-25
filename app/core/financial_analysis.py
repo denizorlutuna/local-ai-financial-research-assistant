@@ -16,15 +16,74 @@ def classify_market_cap(market_cap):
 
     return "Micro Cap"
 
+def analyze_market_cap(company):
+    market_cap = company.get("market_cap")
+
+    if market_cap is not None and market_cap >= 200_000_000_000:
+        return "Global market leader"
+
+    return None
+
+def analyze_pe_ratio(company):
+    pe_ratio = company.get("pe_ratio")
+
+    if pe_ratio is None:
+        return None
+
+    if pe_ratio >= 35:
+        return "Stock may be highly valued based on its P/E ratio"
+
+    if pe_ratio >= 20:
+        return "Stock has a relatively high P/E ratio"
+
+    if pe_ratio >= 10:
+        return "Stock has a moderate P/E ratio"
+
+    if pe_ratio > 0:
+        return "Stock has a relatively low P/E ratio"
+
+    return "P/E ratio may indicate unusual earnings conditions"
+
+def analyze_price_position(company):
+    current_price = company.get("current_price")
+    high = company.get("fifty_two_week_high")
+    low = company.get("fifty_two_week_low")
+
+    if None in (current_price, high, low):
+        return None
+
+    range_size = high - low
+
+    if range_size <= 0:
+        return None
+
+    position = (current_price - low) / range_size
+
+    if position >= 0.8:
+        return "Stock is trading close to its 52-week high"
+
+    if position <= 0.2:
+        return "Stock is trading close to its 52-week low"
+
+    return "Stock is trading within its normal yearly range"
+
 def generate_company_summary(company):
     summary = []
 
-    market_cap = company.get("market_cap")
+    market_cap_analysis = analyze_market_cap(company)
+    if market_cap_analysis:
+        summary.append(market_cap_analysis)
+
+    pe_analysis = analyze_pe_ratio(company)
+    if pe_analysis:
+        summary.append(pe_analysis)
+
+    price_position = analyze_price_position(company)
+    if price_position:
+        summary.append(price_position)
+
     sector = company.get("sector")
     current_price = company.get("current_price")
-
-    if market_cap is not None and market_cap >= 200_000_000_000:
-        summary.append("Global market leader")
 
     if sector == "Technology":
         summary.append("Operates in the technology sector")

@@ -1,5 +1,5 @@
-from app.data.market_data import get_company_info
+from app.core.research import start_research
 
-company = get_company_info("AAPL")
+result = start_research("AAPL")
 
-print(company)
+print(result["summary"])
