@@ -1,3 +1,6 @@
+from app.core.financial_metrics import (calculate_profit_margin, calculate_debt_ratio, calculate_cash_ratio)
+
+
 def classify_market_cap(market_cap):
     if market_cap is None:
         return "Unknown"
@@ -95,3 +98,34 @@ def generate_company_summary(company):
         summary.append("Limited analysis available")
 
     return summary
+
+def analyze_financial_health(financials):
+    profit_margin = calculate_profit_margin(financials)
+    debt_ratio = calculate_debt_ratio(financials)
+    cash_ratio = calculate_cash_ratio(financials)
+
+    analysis = []
+
+    if profit_margin >= 20:
+        analysis.append("✅ Strong profitability.")
+    elif profit_margin >= 10:
+        analysis.append("🟡 Moderate profitability.")
+    else:
+        analysis.append("🔴 Weak profitability.")
+
+    if debt_ratio < 50:
+        analysis.append("✅ Healthy debt level.")
+    else:
+        analysis.append("🔴 High debt level.")
+
+    if cash_ratio >= 30:
+        analysis.append("✅ Strong liquidity.")
+    else:
+        analysis.append("🟡 Limited liquidity.")
+
+    return {
+        "profit_margin": round(profit_margin, 2),
+        "debt_ratio": round(debt_ratio, 2),
+        "cash_ratio": round(cash_ratio, 2),
+        "analysis": analysis,
+    }
