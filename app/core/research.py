@@ -1,10 +1,7 @@
-from app.core.financial_analysis import (
-    classify_market_cap,
-    generate_company_summary,
-    analyze_financial_health,
-)
+from app.core.financial_analysis import (classify_market_cap, generate_company_summary,analyze_financial_health)
 from app.data.market_data import get_company_info
 from app.utils.formatter import format_market_cap, format_price
+from app.core.investment_analysis import generate_investment_outlook
 
 
 def start_research(company_name):
@@ -25,6 +22,11 @@ def start_research(company_name):
     analysis = generate_company_summary(company)
     financial_health = analyze_financial_health(company)
 
+    investment_outlook = generate_investment_outlook(
+    company,
+    financial_health
+    )
+ 
     profit_margin_text = (
         f"{financial_health['profit_margin']}%"
         if financial_health["profit_margin"] is not None
@@ -62,5 +64,24 @@ def start_research(company_name):
             + "\n".join(
                 f"- {item}" for item in financial_health["analysis"]
             )
+            + "\n\nInvestment Outlook:\n"
+            + "Strengths:\n"
+            + (
+                "\n".join(
+                    f"- {item}" for item in investment_outlook["strengths"]
+                )
+                if investment_outlook["strengths"]
+                else "- No major strengths identified"
+            )
+            + "\n\nRisks:\n"
+            + (
+                "\n".join(
+                    f"- {item}" for item in investment_outlook["risks"]
+                )
+                if investment_outlook["risks"]
+                else "- No major risks identified"
+            )
+            + f"\n\nScore: {investment_outlook['score']}\n"
+            + f"Recommendation: {investment_outlook['recommendation']}"
         )
     }
