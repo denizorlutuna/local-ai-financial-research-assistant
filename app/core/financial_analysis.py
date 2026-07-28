@@ -100,32 +100,55 @@ def generate_company_summary(company):
     return summary
 
 def analyze_financial_health(financials):
-    profit_margin = calculate_profit_margin(financials)
-    debt_ratio = calculate_debt_ratio(financials)
-    cash_ratio = calculate_cash_ratio(financials)
+    try:
+        profit_margin = calculate_profit_margin(financials)
+    except (TypeError, KeyError, ZeroDivisionError):
+        profit_margin = None
+
+    try:
+        debt_ratio = calculate_debt_ratio(financials)
+    except (TypeError, KeyError, ZeroDivisionError):
+        debt_ratio = None
+
+    try:
+        cash_ratio = calculate_cash_ratio(financials)
+    except (TypeError, KeyError, ZeroDivisionError):
+        cash_ratio = None
 
     analysis = []
 
-    if profit_margin >= 20:
-        analysis.append("✅ Strong profitability.")
+    if profit_margin is None:
+        analysis.append("Profitability data is unavailable.")
+    elif profit_margin >= 20:
+        analysis.append("Strong profitability.")
     elif profit_margin >= 10:
-        analysis.append("🟡 Moderate profitability.")
+        analysis.append("Moderate profitability.")
     else:
-        analysis.append("🔴 Weak profitability.")
+        analysis.append("Weak profitability.")
 
-    if debt_ratio < 50:
-        analysis.append("✅ Healthy debt level.")
+    if debt_ratio is None:
+        analysis.append("Debt data is unavailable.")
+    elif debt_ratio < 50:
+        analysis.append("Healthy debt level.")
     else:
-        analysis.append("🔴 High debt level.")
+        analysis.append("High debt level.")
 
-    if cash_ratio >= 30:
-        analysis.append("✅ Strong liquidity.")
+    if cash_ratio is None:
+        analysis.append("Liquidity data is unavailable.")
+    elif cash_ratio >= 30:
+        analysis.append("Strong liquidity.")
     else:
-        analysis.append("🟡 Limited liquidity.")
+        analysis.append("Limited liquidity.")
 
     return {
-        "profit_margin": round(profit_margin, 2),
-        "debt_ratio": round(debt_ratio, 2),
-        "cash_ratio": round(cash_ratio, 2),
+        "profit_margin": (
+            round(profit_margin, 2) if profit_margin is not None else None
+        ),
+        "debt_ratio": (
+            round(debt_ratio, 2) if debt_ratio is not None else None
+        ),
+        "cash_ratio": (
+            round(cash_ratio, 2) if cash_ratio is not None else None
+        ),
         "analysis": analysis,
     }

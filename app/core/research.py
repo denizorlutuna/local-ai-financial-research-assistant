@@ -8,16 +8,40 @@ from app.utils.formatter import format_market_cap, format_price
 
 
 def start_research(company_name):
-    company = get_company_info(company_name)
-
-    if company["name"] is None:
+    try:
+        company = get_company_info(company_name)
+    except Exception as error:
         return {
             "status": "error",
-            "summary": "Company not found."
+            "summary": f"Unable to retrieve company data: {error}"
+        }
+
+    if not company or company.get("name") is None:
+        return {
+            "status": "error",
+            "summary": f"Company not found for ticker: {company_name}"
         }
 
     analysis = generate_company_summary(company)
     financial_health = analyze_financial_health(company)
+
+    profit_margin_text = (
+        f"{financial_health['profit_margin']}%"
+        if financial_health["profit_margin"] is not None
+        else "Not available"
+    )
+
+    debt_ratio_text = (
+        f"{financial_health['debt_ratio']}%"
+        if financial_health["debt_ratio"] is not None
+        else "Not available"
+    )
+
+    cash_ratio_text = (
+        f"{financial_health['cash_ratio']}%"
+        if financial_health["cash_ratio"] is not None
+        else "Not available"
+    )
 
     return {
         "status": "completed",
@@ -32,9 +56,9 @@ def start_research(company_name):
             f"Quick Analysis:\n"
             + "\n".join(f"- {item}" for item in analysis)
             + "\n\nFinancial Health:\n"
-            + f"Profit Margin: {financial_health['profit_margin']}%\n"
-            + f"Debt Ratio: {financial_health['debt_ratio']}%\n"
-            + f"Cash Ratio: {financial_health['cash_ratio']}%\n"
+            + f"Profit Margin: {profit_margin_text}\n"
+            + f"Debt Ratio: {debt_ratio_text}\n"
+            + f"Cash Ratio: {cash_ratio_text}\n"
             + "\n".join(
                 f"- {item}" for item in financial_health["analysis"]
             )
