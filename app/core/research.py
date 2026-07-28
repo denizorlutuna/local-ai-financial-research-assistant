@@ -1,4 +1,4 @@
-from app.core.financial_analysis import (classify_market_cap, generate_company_summary,analyze_financial_health)
+from app.core.financial_analysis import (classify_market_cap, generate_company_summary, analyze_financial_health, analyze_risks)
 from app.data.market_data import get_company_info
 from app.utils.formatter import format_market_cap, format_price
 from app.core.investment_analysis import generate_investment_outlook
@@ -24,10 +24,12 @@ def start_research(company_name):
     historical_data = get_historical_prices(company["ticker"])
     analysis = generate_company_summary(company, historical_data)
     financial_health = analyze_financial_health(company)
+    risks = analyze_risks(company)
 
     investment_outlook = generate_investment_outlook(
-    company,
-    financial_health
+        company,
+        financial_health,
+        risks
     )
  
     profit_margin_text = (
@@ -81,6 +83,12 @@ def start_research(company_name):
             + f"Cash Ratio: {cash_ratio_text}\n"
             + "\n".join(
                 f"- {item}" for item in financial_health["analysis"]
+            )
+            + "\n\nRisk Analysis:\n"
+            + (
+                "\n".join(f"- {risk}" for risk in risks)
+                if risks
+                else "- No major valuation or price risks identified"
             )
             + "\n\nInvestment Outlook:\n"
             + "Strengths:\n"

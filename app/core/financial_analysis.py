@@ -1,5 +1,14 @@
 from app.core.financial_metrics import (calculate_profit_margin, calculate_debt_ratio, calculate_cash_ratio)
 
+ANALYSIS_THRESHOLDS = {
+    "high_pe_ratio": 30,
+    "near_52_week_high": 0.95,
+    "strong_profit_margin": 20,
+    "healthy_profit_margin": 10,
+    "healthy_debt_ratio": 50,
+    "strong_cash_ratio": 50,
+}
+
 def classify_market_cap(market_cap):
     if market_cap is None:
         return "Unknown"
@@ -169,3 +178,25 @@ def calculate_price_performance(historical_data):
     end_price = historical_data["end_price"]
 
     return ((end_price - start_price) / start_price) * 100
+
+def analyze_risks(company):
+    risks = []
+
+    pe_ratio = company.get("pe_ratio")
+    current_price = company.get("current_price")
+    fifty_two_week_high = company.get("fifty_two_week_high")
+
+    if (
+    pe_ratio is not None
+    and pe_ratio > ANALYSIS_THRESHOLDS["high_pe_ratio"]
+    ):
+        risks.append("High valuation based on P/E ratio")
+
+    if (
+        current_price is not None
+        and fifty_two_week_high is not None
+        and current_price >= fifty_two_week_high * ANALYSIS_THRESHOLDS["near_52_week_high"]
+    ):
+        risks.append("Stock is trading close to its 52-week high")
+
+    return risks
