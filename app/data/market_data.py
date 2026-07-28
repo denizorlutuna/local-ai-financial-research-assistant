@@ -38,3 +38,17 @@ def get_company_info(ticker):
         "total_debt": info.get("totalDebt"),
         "cash": info.get("totalCash"),
     }
+
+def get_historical_prices(ticker, period="1y"):
+    stock = yf.Ticker(ticker)
+    history = stock.history(period=period)
+
+    if history.empty:
+        return None
+
+    return {
+        "start_price": history["Close"].iloc[0],
+        "end_price": history["Close"].iloc[-1],
+        "highest_price": history["High"].max(),
+        "lowest_price": history["Low"].min()
+    }

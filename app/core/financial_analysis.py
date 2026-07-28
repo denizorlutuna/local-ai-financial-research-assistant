@@ -1,6 +1,5 @@
 from app.core.financial_metrics import (calculate_profit_margin, calculate_debt_ratio, calculate_cash_ratio)
 
-
 def classify_market_cap(market_cap):
     if market_cap is None:
         return "Unknown"
@@ -70,7 +69,7 @@ def analyze_price_position(company):
 
     return "Stock is trading within its normal yearly range"
 
-def generate_company_summary(company):
+def generate_company_summary(company, historical_data=None):
     summary = []
 
     market_cap_analysis = analyze_market_cap(company)
@@ -93,6 +92,18 @@ def generate_company_summary(company):
 
     if current_price is not None and current_price >= 100:
         summary.append("High-priced stock")
+
+    if historical_data:
+        yearly_return = calculate_price_performance(historical_data)
+
+        if yearly_return >= 30:
+            summary.append("Strong one-year price momentum")
+        elif yearly_return >= 10:
+            summary.append("Positive one-year price performance")
+        elif yearly_return >= 0:
+            summary.append("Stable one-year price performance")
+        else:
+            summary.append("Negative one-year price performance")
 
     if not summary:
         summary.append("Limited analysis available")
@@ -152,3 +163,9 @@ def analyze_financial_health(financials):
         ),
         "analysis": analysis,
     }
+
+def calculate_price_performance(historical_data):
+    start_price = historical_data["start_price"]
+    end_price = historical_data["end_price"]
+
+    return ((end_price - start_price) / start_price) * 100
