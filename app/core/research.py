@@ -1,9 +1,9 @@
 from app.core.financial_analysis import (classify_market_cap, generate_company_summary, analyze_financial_health, analyze_risks)
-from app.data.market_data import get_company_info
+from app.data.market_data import (get_company_info, get_historical_prices, get_price_history)
 from app.utils.formatter import format_market_cap, format_price
 from app.core.investment_analysis import generate_investment_outlook
-from app.data.market_data import get_historical_prices
 from app.core.financial_analysis import calculate_price_performance
+from app.core.market_analysis import (calculate_volatility, calculate_max_drawdown, analyze_price_trend, analyze_market_risk)
 
 
 def start_research(company_name):
@@ -26,6 +26,20 @@ def start_research(company_name):
     financial_health = analyze_financial_health(company)
     risks = analyze_risks(company)
 
+    price_history = get_price_history(company["ticker"])
+
+    volatility = calculate_volatility(price_history)
+    volatility_text = (
+    f"{volatility}%" if volatility is not None else "Not available"
+    )
+    max_drawdown = calculate_max_drawdown(price_history)
+    max_drawdown_text = (
+    f"{max_drawdown}%" if max_drawdown is not None else "Not available"
+    )
+    trend = analyze_price_trend(price_history)
+    risk_level = analyze_market_risk(volatility)
+
+    
     investment_outlook = generate_investment_outlook(
         company,
         financial_health,
@@ -77,6 +91,11 @@ def start_research(company_name):
                 if historical_data and yearly_return is not None
                 else "Historical price data is unavailable."
             )
+            + "\n\nMarket Analysis:\n"
+            + f"Volatility: {volatility_text}\n"
+            + f"Maximum Drawdown: {max_drawdown_text}\n"
+            + f"Trend: {trend}\n"
+            + f"Risk Level: {risk_level}"
             + "\n\nFinancial Health:\n"
             + f"Profit Margin: {profit_margin_text}\n"
             + f"Debt Ratio: {debt_ratio_text}\n"

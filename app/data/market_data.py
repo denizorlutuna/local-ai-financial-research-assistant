@@ -52,3 +52,12 @@ def get_historical_prices(ticker, period="1y"):
         "highest_price": history["High"].max(),
         "lowest_price": history["Low"].min()
     }
+
+def get_price_history(ticker):
+    stock = yf.Ticker(ticker)
+    historical_data = stock.history(period="1y")
+
+    if historical_data.empty:
+        return None
+
+    return historical_data
