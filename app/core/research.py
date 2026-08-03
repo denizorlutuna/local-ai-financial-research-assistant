@@ -1,9 +1,24 @@
-from app.core.financial_analysis import (classify_market_cap, generate_company_summary, analyze_financial_health, analyze_risks)
-from app.data.market_data import (get_company_info, get_historical_prices, get_price_history)
-from app.utils.formatter import format_market_cap, format_price
+from app.ai.financial_analyzer import generate_ai_financial_analysis
+from app.core.financial_analysis import (
+    analyze_financial_health,
+    analyze_risks,
+    calculate_price_performance,
+    classify_market_cap,
+    generate_company_summary,
+)
 from app.core.investment_analysis import generate_investment_outlook
-from app.core.financial_analysis import calculate_price_performance
-from app.core.market_analysis import (calculate_volatility, calculate_max_drawdown, analyze_price_trend, analyze_market_risk)
+from app.core.market_analysis import (
+    analyze_market_risk,
+    analyze_price_trend,
+    calculate_max_drawdown,
+    calculate_volatility,
+)
+from app.data.market_data import (
+    get_company_info,
+    get_historical_prices,
+    get_price_history,
+)
+from app.utils.formatter import format_market_cap, format_price
 
 
 def start_research(company_name):
@@ -12,40 +27,45 @@ def start_research(company_name):
     except Exception as error:
         return {
             "status": "error",
-            "summary": f"Unable to retrieve company data: {error}"
+            "summary": f"Unable to retrieve company data: {error}",
         }
 
     if not company or company.get("name") is None:
         return {
             "status": "error",
-            "summary": f"Company not found for ticker: {company_name}"
+            "summary": f"Company not found for ticker: {company_name}",
         }
 
     historical_data = get_historical_prices(company["ticker"])
+    price_history = get_price_history(company["ticker"])
+
     analysis = generate_company_summary(company, historical_data)
     financial_health = analyze_financial_health(company)
     risks = analyze_risks(company)
 
-    price_history = get_price_history(company["ticker"])
-
     volatility = calculate_volatility(price_history)
-    volatility_text = (
-    f"{volatility}%" if volatility is not None else "Not available"
-    )
     max_drawdown = calculate_max_drawdown(price_history)
-    max_drawdown_text = (
-    f"{max_drawdown}%" if max_drawdown is not None else "Not available"
-    )
     trend = analyze_price_trend(price_history)
     risk_level = analyze_market_risk(volatility)
 
-    
     investment_outlook = generate_investment_outlook(
         company,
         financial_health,
-        risks
+        risks,
     )
- 
+
+    volatility_text = (
+        f"{volatility}%"
+        if volatility is not None
+        else "Not available"
+    )
+
+    max_drawdown_text = (
+        f"{max_drawdown}%"
+        if max_drawdown is not None
+        else "Not available"
+    )
+
     profit_margin_text = (
         f"{financial_health['profit_margin']}%"
         if financial_health["profit_margin"] is not None
@@ -69,64 +89,81 @@ def start_research(company_name):
     else:
         yearly_return = None
 
+    base_summary = (
+        f"Company: {company['name']}\n"
+        f"Ticker: {company['ticker']}\n"
+        f"Sector: {company['sector']}\n"
+        f"Industry: {company['industry']}\n"
+        f"Current Price: {format_price(company['current_price'])}\n"
+        f"Market Cap: {format_market_cap(company['market_cap'])}\n"
+        f"Company Size: "
+        f"{classify_market_cap(company['market_cap'])}\n\n"
+        f"Quick Analysis:\n"
+        + "\n".join(f"- {item}" for item in analysis)
+        + "\n\nPrice Performance:\n"
+        + (
+            f"Start Price: "
+            f"{format_price(historical_data['start_price'])}\n"
+            f"Current Price: "
+            f"{format_price(historical_data['end_price'])}\n"
+            f"Highest Price: "
+            f"{format_price(historical_data['highest_price'])}\n"
+            f"Lowest Price: "
+            f"{format_price(historical_data['lowest_price'])}\n"
+            f"1-Year Return: {yearly_return:.2f}%"
+            if historical_data and yearly_return is not None
+            else "Historical price data is unavailable."
+        )
+        + "\n\nMarket Analysis:\n"
+        + f"Volatility: {volatility_text}\n"
+        + f"Maximum Drawdown: {max_drawdown_text}\n"
+        + f"Trend: {trend}\n"
+        + f"Risk Level: {risk_level}\n\n"
+        + "Financial Health:\n"
+        + f"Profit Margin: {profit_margin_text}\n"
+        + f"Debt Ratio: {debt_ratio_text}\n"
+        + f"Cash Ratio: {cash_ratio_text}\n"
+        + "\n".join(
+            f"- {item}"
+            for item in financial_health["analysis"]
+        )
+        + "\n\nRisk Analysis:\n"
+        + (
+            "\n".join(f"- {risk}" for risk in risks)
+            if risks
+            else "- No major valuation or price risks identified"
+        )
+        + "\n\nInvestment Outlook:\n"
+        + "Strengths:\n"
+        + (
+            "\n".join(
+                f"- {item}"
+                for item in investment_outlook["strengths"]
+            )
+            if investment_outlook["strengths"]
+            else "- No major strengths identified"
+        )
+        + "\n\nRisks:\n"
+        + (
+            "\n".join(
+                f"- {item}"
+                for item in investment_outlook["risks"]
+            )
+            if investment_outlook["risks"]
+            else "- No major risks identified"
+        )
+        + f"\n\nScore: {investment_outlook['score']}\n"
+        + f"Recommendation: "
+        f"{investment_outlook['recommendation']}"
+    )
+
+    ai_analysis = generate_ai_financial_analysis(base_summary)
+
     return {
         "status": "completed",
         "summary": (
-            f"Company: {company['name']}\n"
-            f"Ticker: {company['ticker']}\n"
-            f"Sector: {company['sector']}\n"
-            f"Industry: {company['industry']}\n"
-            f"Current Price: {format_price(company['current_price'])}\n"
-            f"Market Cap: {format_market_cap(company['market_cap'])}\n"
-            f"Company Size: {classify_market_cap(company['market_cap'])}\n\n"
-            f"Quick Analysis:\n"
-            + "\n".join(f"- {item}" for item in analysis)
-            + "\n\nPrice Performance:\n"
-            + (
-                f"Start Price: {format_price(historical_data['start_price'])}\n"
-                f"Current Price: {format_price(historical_data['end_price'])}\n"
-                f"Highest Price: {format_price(historical_data['highest_price'])}\n"
-                f"Lowest Price: {format_price(historical_data['lowest_price'])}\n"
-                f"1-Year Return: {yearly_return:.2f}%"
-                if historical_data and yearly_return is not None
-                else "Historical price data is unavailable."
-            )
-            + "\n\nMarket Analysis:\n"
-            + f"Volatility: {volatility_text}\n"
-            + f"Maximum Drawdown: {max_drawdown_text}\n"
-            + f"Trend: {trend}\n"
-            + f"Risk Level: {risk_level}"
-            + "\n\nFinancial Health:\n"
-            + f"Profit Margin: {profit_margin_text}\n"
-            + f"Debt Ratio: {debt_ratio_text}\n"
-            + f"Cash Ratio: {cash_ratio_text}\n"
-            + "\n".join(
-                f"- {item}" for item in financial_health["analysis"]
-            )
-            + "\n\nRisk Analysis:\n"
-            + (
-                "\n".join(f"- {risk}" for risk in risks)
-                if risks
-                else "- No major valuation or price risks identified"
-            )
-            + "\n\nInvestment Outlook:\n"
-            + "Strengths:\n"
-            + (
-                "\n".join(
-                    f"- {item}" for item in investment_outlook["strengths"]
-                )
-                if investment_outlook["strengths"]
-                else "- No major strengths identified"
-            )
-            + "\n\nRisks:\n"
-            + (
-                "\n".join(
-                    f"- {item}" for item in investment_outlook["risks"]
-                )
-                if investment_outlook["risks"]
-                else "- No major risks identified"
-            )
-            + f"\n\nScore: {investment_outlook['score']}\n"
-            + f"Recommendation: {investment_outlook['recommendation']}"
-        )
+            base_summary
+            + "\n\nAI Financial Analysis:\n"
+            + ai_analysis
+        ),
     }
