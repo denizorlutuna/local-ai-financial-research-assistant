@@ -11,12 +11,30 @@ def split_pages_into_chunks(
     chunks = []
 
     for page in pages:
-        text = " ".join(page["text"].split())
+        text = " ".join(
+            page["text"].split()
+        )
+
         start = 0
         chunk_index = 0
 
         while start < len(text):
-            end = start + chunk_size
+            end = min(
+                start + chunk_size,
+                len(text),
+            )
+
+            # Chunk bitişini kelimenin ortasından kesmemek için
+            if end < len(text):
+                last_space = text.rfind(
+                    " ",
+                    start,
+                    end,
+                )
+
+                if last_space > start:
+                    end = last_space
+
             chunk_text = text[start:end].strip()
 
             if chunk_text:
@@ -28,7 +46,31 @@ def split_pages_into_chunks(
                     }
                 )
 
-            start += chunk_size - overlap
+            if end >= len(text):
+                break
+
+            # Overlap uygula
+            next_start = end - overlap
+
+            # Başlangıç kelimenin ortasındaysa
+            # bir sonraki boşluğa ilerle
+            if (
+                next_start > 0
+                and text[next_start - 1] != " "
+            ):
+                next_space = text.find(
+                    " ",
+                    next_start,
+                )
+
+                if next_space != -1:
+                    next_start = next_space + 1
+
+            # Sonsuz veya çok yavaş ilerleyen döngüyü engelle
+            if next_start <= start:
+                next_start = end
+
+            start = next_start
             chunk_index += 1
 
     return chunks
