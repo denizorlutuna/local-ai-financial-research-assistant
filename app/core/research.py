@@ -166,4 +166,57 @@ def start_research(company_name):
             + "\n\nAI Financial Analysis:\n"
             + ai_analysis
         ),
+        "data": {
+            "company": {
+                "name": company["name"],
+                "ticker": company["ticker"],
+                "sector": company["sector"],
+                "industry": company["industry"],
+                "current_price": format_price(company["current_price"]),
+                "market_cap": format_market_cap(company["market_cap"]),
+                "company_size": classify_market_cap(company["market_cap"]),
+            },
+            "price_performance": {
+                "start_price": (
+                    format_price(historical_data["start_price"])
+                    if historical_data
+                    else "Not available"
+                ),
+                "current_price": (
+                    format_price(historical_data["end_price"])
+                    if historical_data
+                    else "Not available"
+                ),
+                "highest_price": (
+                    format_price(historical_data["highest_price"])
+                    if historical_data
+                    else "Not available"
+                ),
+                "lowest_price": (
+                    format_price(historical_data["lowest_price"])
+                    if historical_data
+                    else "Not available"
+                ),
+                "yearly_return": (
+                    f"{yearly_return:.2f}%"
+                    if yearly_return is not None
+                    else "Not available"
+                ),
+            },
+            "market_analysis": {
+                "volatility": volatility_text,
+                "max_drawdown": max_drawdown_text,
+                "trend": trend,
+                "risk_level": risk_level,
+            },
+            "financial_health": {
+                "profit_margin": profit_margin_text,
+                "debt_ratio": debt_ratio_text,
+                "cash_ratio": cash_ratio_text,
+                "analysis": financial_health["analysis"],
+            },
+            "risk_analysis": risks,
+            "investment_outlook": investment_outlook,
+            "ai_analysis": ai_analysis,
+        },
     }
