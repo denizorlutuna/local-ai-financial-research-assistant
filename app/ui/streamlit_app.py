@@ -10,6 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.core.research import start_research
+from app.rag.rag_answer import answer_question
 
 
 st.set_page_config(
@@ -177,3 +178,48 @@ if analyze_button:
             with report_tab:
                 st.subheader("Complete Research Report")
                 st.text(result["summary"])
+
+st.divider()
+
+st.header("Ask the 10-K")
+
+st.caption(
+    "Ask questions about Apple's 2025 Form 10-K using the local RAG system."
+)
+
+rag_query = st.text_input(
+    "Question about the document",
+    placeholder="What are Apple's main business risks?",
+    key="rag_query",
+)
+
+ask_button = st.button(
+    "Ask Document",
+    use_container_width=True,
+)
+
+if ask_button:
+    if not rag_query.strip():
+        st.warning("Please enter a question.")
+    else:
+        with st.spinner(
+            "Searching the document and generating an answer..."
+        ):
+            rag_result = answer_question(
+                query=rag_query,
+                top_k=5,
+            )
+
+        st.subheader("Answer")
+        st.markdown(rag_result["answer"])
+
+        st.subheader("Sources")
+
+        if rag_result["sources"]:
+            for source in rag_result["sources"]:
+                st.write(
+                    f"Page {source['page_number']} "
+                    f"— similarity distance: {source['distance']:.4f}"
+                )
+        else:
+            st.info("No sources found.")

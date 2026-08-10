@@ -1,8 +1,10 @@
+from app.ai.ollama_client import generate_response
 from app.rag.retriever import search_similar_chunks
+
 
 def answer_question(query, top_k=5):
     results = search_similar_chunks(query, top_k=top_k)
-    
+
     if not results:
         return {
             "answer": "No relevant information was found.",
@@ -12,14 +14,38 @@ def answer_question(query, top_k=5):
     context_parts = []
 
     for result in results:
-        context_parts.append(result["text"])
+        context_parts.append(
+            f"Page {result['page_number']}:\n{result['text']}"
+        )
 
     context = "\n\n".join(context_parts)
 
-    answer = (
-        "Relevant information found in the document:\n\n"
-        f"{context}"
-    )
+    prompt = f"""
+You are a financial document research assistant.
+
+Answer the user's question using only the document context below.
+
+Instructions:
+- Give a direct and concise answer.
+- Identify all major risks supported by the context.
+- Summarize the main points instead of copying the context.
+- Do not invent information.
+- Ignore irrelevant context.
+- Mention uncertainty if the context is insufficient.
+- Use bullet points when appropriate.
+- After each important point, cite the source page like [Page 14].
+- Do not give personal investment advice.
+- Cite relevant pages inline like [Page 8].
+- Do not create a separate Sources section.
+
+Question:
+{query}
+
+Document Context:
+{context}
+"""
+
+    answer = generate_response(prompt)
 
     sources = []
 
@@ -40,7 +66,10 @@ def answer_question(query, top_k=5):
 def main():
     query = "What are Apple's main business risks?"
 
-    result = answer_question(query)
+    result = answer_question(
+        query=query,
+        top_k=5,
+    )
 
     print(f"Question: {query}")
     print("\nAnswer:")
