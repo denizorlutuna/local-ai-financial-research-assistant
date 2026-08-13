@@ -5,6 +5,7 @@ from app.rag.vector_store import get_collection
 def search_similar_chunks(
     query,
     top_k=5,
+    document_name=None,
 ):
     if not query or not query.strip():
         raise ValueError(
@@ -22,14 +23,23 @@ def search_similar_chunks(
         [query]
     )[0]
 
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
-        include=[
+    query_kwargs = {
+        "query_embeddings": [query_embedding],
+        "n_results": top_k,
+        "include": [
             "documents",
             "metadatas",
             "distances",
         ],
+    }
+
+    if document_name:
+        query_kwargs["where"] = {
+            "document_name": document_name,
+        }
+
+    results = collection.query(
+        **query_kwargs
     )
 
     retrieved_chunks = []

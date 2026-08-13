@@ -2,8 +2,16 @@ from app.ai.ollama_client import generate_response
 from app.rag.retriever import search_similar_chunks
 
 
-def answer_question(query, top_k=5):
-    results = search_similar_chunks(query, top_k=top_k)
+def answer_question(
+    query,
+    top_k=5,
+    document_name=None,
+):
+    results = search_similar_chunks(
+        query,
+        top_k=top_k,
+        document_name=document_name,
+    )
 
     if not results:
         return {
@@ -26,6 +34,7 @@ You are a financial document research assistant.
 Answer the user's question using only the document context below.
 
 Instructions:
+
 - Give a direct and concise answer.
 - Identify all major risks supported by the context.
 - Summarize the main points instead of copying the context.
@@ -52,6 +61,7 @@ Document Context:
     for result in results:
         sources.append(
             {
+                "document_name": result["document_name"],
                 "page_number": result["page_number"],
                 "distance": result["distance"],
             }
@@ -79,7 +89,8 @@ def main():
 
     for source in result["sources"]:
         print(
-            f"- Page {source['page_number']}, "
+            f"- {source['document_name']} | "
+            f"Page {source['page_number']} | "
             f"distance: {source['distance']:.4f}"
         )
 
