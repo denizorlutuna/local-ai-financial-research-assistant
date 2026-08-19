@@ -9,8 +9,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.core.research import start_research
-from app.rag.rag_answer import answer_question
+
+from app.ai.research_assistant import process_query
 
 
 st.set_page_config(
@@ -20,206 +20,330 @@ st.set_page_config(
 )
 
 st.title("Local AI Financial Research Assistant")
+
 st.caption(
-    "Local company analysis powered by market data and Ollama."
+    "Ask questions about companies, financial data, "
+    "uploaded reports, or general finance concepts."
 )
 
-ticker = st.text_input(
-    "Company ticker",
-    placeholder="AAPL, MSFT, NVDA...",
-).strip().upper()
+st.divider()
 
-analyze_button = st.button(
-    "Run Analysis",
+st.subheader("Ask the Financial Assistant")
+
+query = st.text_input(
+    "Question",
+    placeholder=(
+        "How risky is NVIDIA? "
+        "What does P/E ratio mean? "
+        "What risks are discussed in this report?"
+    ),
+)
+
+document_name = st.text_input(
+    "Document name (optional)",
+    placeholder="microsoft_10k_2025.pdf",
+    help=(
+        "Use this when your question refers to a specific "
+        "document already indexed in the RAG system."
+    ),
+)
+
+ask_button = st.button(
+    "Ask Assistant",
     type="primary",
     use_container_width=True,
 )
 
-if analyze_button:
-    if not ticker:
-        st.warning("Please enter a company ticker.")
-    else:
-        with st.spinner(
-            "Collecting market data and generating AI analysis..."
-        ):
-            result = start_research(ticker)
+if ask_button:
+    if not query.strip():
+        st.warning("Please enter a question.")
 
-        if result["status"] == "error":
-            st.error(result["summary"])
-        else:
-            data = result["data"]
-            company = data["company"]
-            price = data["price_performance"]
-            market = data["market_analysis"]
-            health = data["financial_health"]
-            outlook = data["investment_outlook"]
+    else:
+        try:
+            with st.spinner("Analyzing your question..."):
+                result = process_query(
+                    query=query,
+                    document_name=document_name.strip() or None,
+                )
+
+            route = result.get("route", "unknown")
 
             st.success("Analysis completed.")
 
-            st.subheader(
-                f"{company['name']} ({company['ticker']})"
-            )
             st.caption(
-                f"{company['sector']} · {company['industry']} · "
-                f"{company['company_size']}"
+                f"Detected route: {route}"
             )
 
-            metric_1, metric_2, metric_3, metric_4 = st.columns(4)
+            st.subheader("Answer")
 
-            metric_1.metric(
-                "Current Price",
-                company["current_price"],
-            )
-            metric_2.metric(
-                "Market Cap",
-                company["market_cap"],
-            )
-            metric_3.metric(
-                "1-Year Return",
-                price["yearly_return"],
-            )
-            metric_4.metric(
-                "Recommendation",
-                outlook["recommendation"],
+            answer = result.get(
+                "answer",
+                "No answer was generated.",
             )
 
-            overview_tab, ai_tab, report_tab = st.tabs(
-                [
-                    "Overview",
-                    "AI Analysis",
-                    "Full Report",
-                ]
+            st.markdown(answer)
+
+            if route == "market_data":
+                ticker = result.get("ticker")
+
+                if ticker:
+                    st.caption(
+                        f"Resolved ticker: {ticker}"
+                    )
+
+                data = result.get("data")
+
+                if data:
+                    company = data.get("company", {})
+                    price = data.get(
+                        "price_performance",
+                        {},
+                    )
+                    market = data.get(
+                        "market_analysis",
+                        {},
+                    )
+                    health = data.get(
+                        "financial_health",
+                        {},
+                    )
+                    outlook = data.get(
+                        "investment_outlook",
+                        {},
+                    )
+
+                    st.divider()
+
+                    st.subheader(
+                        f"{company.get('name', 'Company')} "
+                        f"({company.get('ticker', ticker or 'N/A')})"
+                    )
+
+                    company_info = (
+                        f"{company.get('sector', 'N/A')} · "
+                        f"{company.get('industry', 'N/A')} · "
+                        f"{company.get('company_size', 'N/A')}"
+                    )
+
+                    st.caption(company_info)
+
+                    metric_1, metric_2, metric_3, metric_4 = (
+                        st.columns(4)
+                    )
+
+                    metric_1.metric(
+                        "Current Price",
+                        company.get(
+                            "current_price",
+                            "Not available",
+                        ),
+                    )
+
+                    metric_2.metric(
+                        "Market Cap",
+                        company.get(
+                            "market_cap",
+                            "Not available",
+                        ),
+                    )
+
+                    metric_3.metric(
+                        "1-Year Return",
+                        price.get(
+                            "yearly_return",
+                            "Not available",
+                        ),
+                    )
+
+                    metric_4.metric(
+                        "Recommendation",
+                        outlook.get(
+                            "recommendation",
+                            "Not available",
+                        ),
+                    )
+
+                    overview_tab, financial_tab = st.tabs(
+                        [
+                            "Market Overview",
+                            "Financial Health",
+                        ]
+                    )
+
+                    with overview_tab:
+                        market_1, market_2, market_3, market_4 = (
+                            st.columns(4)
+                        )
+
+                        market_1.metric(
+                            "Volatility",
+                            market.get(
+                                "volatility",
+                                "Not available",
+                            ),
+                        )
+
+                        market_2.metric(
+                            "Maximum Drawdown",
+                            market.get(
+                                "max_drawdown",
+                                "Not available",
+                            ),
+                        )
+
+                        market_3.metric(
+                            "Trend",
+                            market.get(
+                                "trend",
+                                "Not available",
+                            ),
+                        )
+
+                        market_4.metric(
+                            "Risk Level",
+                            market.get(
+                                "risk_level",
+                                "Not available",
+                            ),
+                        )
+
+                        st.markdown("### Price Range")
+
+                        price_1, price_2, price_3 = st.columns(3)
+
+                        price_1.metric(
+                            "Start Price",
+                            price.get(
+                                "start_price",
+                                "Not available",
+                            ),
+                        )
+
+                        price_2.metric(
+                            "52-Week High",
+                            price.get(
+                                "highest_price",
+                                "Not available",
+                            ),
+                        )
+
+                        price_3.metric(
+                            "52-Week Low",
+                            price.get(
+                                "lowest_price",
+                                "Not available",
+                            ),
+                        )
+
+                    with financial_tab:
+                        health_1, health_2, health_3 = (
+                            st.columns(3)
+                        )
+
+                        health_1.metric(
+                            "Profit Margin",
+                            health.get(
+                                "profit_margin",
+                                "Not available",
+                            ),
+                        )
+
+                        health_2.metric(
+                            "Debt Ratio",
+                            health.get(
+                                "debt_ratio",
+                                "Not available",
+                            ),
+                        )
+
+                        health_3.metric(
+                            "Cash Ratio",
+                            health.get(
+                                "cash_ratio",
+                                "Not available",
+                            ),
+                        )
+
+                        left_column, right_column = (
+                            st.columns(2)
+                        )
+
+                        with left_column:
+                            st.markdown("### Strengths")
+
+                            strengths = outlook.get(
+                                "strengths",
+                                [],
+                            )
+
+                            if strengths:
+                                for item in strengths:
+                                    st.success(item)
+                            else:
+                                st.info(
+                                    "No major strengths identified."
+                                )
+
+                        with right_column:
+                            st.markdown("### Risks")
+
+                            risks = outlook.get(
+                                "risks",
+                                [],
+                            )
+
+                            if risks:
+                                for item in risks:
+                                    st.warning(item)
+                            else:
+                                st.info(
+                                    "No major risks identified."
+                                )
+
+            if route == "rag":
+                sources = result.get(
+                    "sources",
+                    [],
+                )
+
+                st.divider()
+                st.subheader("Sources")
+
+                if sources:
+                    for source in sources:
+                        document = source.get(
+                            "document_name",
+                            "Unknown document",
+                        )
+
+                        page = source.get(
+                            "page_number",
+                            "N/A",
+                        )
+
+                        distance = source.get(
+                            "distance",
+                        )
+
+                        if distance is not None:
+                            st.write(
+                                f"**{document}** — "
+                                f"Page {page} — "
+                                f"similarity distance: "
+                                f"{distance:.4f}"
+                            )
+                        else:
+                            st.write(
+                                f"**{document}** — "
+                                f"Page {page}"
+                            )
+
+                else:
+                    st.info(
+                        "No sources were returned."
+                    )
+
+        except Exception as error:
+            st.error(
+                f"Unable to process the question: {error}"
             )
-
-            with overview_tab:
-                st.subheader("Market Analysis")
-
-                market_1, market_2, market_3, market_4 = st.columns(4)
-
-                market_1.metric(
-                    "Volatility",
-                    market["volatility"],
-                )
-                market_2.metric(
-                    "Maximum Drawdown",
-                    market["max_drawdown"],
-                )
-                market_3.metric(
-                    "Trend",
-                    market["trend"],
-                )
-                market_4.metric(
-                    "Risk Level",
-                    market["risk_level"],
-                )
-
-                st.subheader("Financial Health")
-
-                health_1, health_2, health_3 = st.columns(3)
-
-                health_1.metric(
-                    "Profit Margin",
-                    health["profit_margin"],
-                )
-                health_2.metric(
-                    "Debt Ratio",
-                    health["debt_ratio"],
-                )
-                health_3.metric(
-                    "Cash Ratio",
-                    health["cash_ratio"],
-                )
-
-                left_column, right_column = st.columns(2)
-
-                with left_column:
-                    st.markdown("### Strengths")
-
-                    strengths = outlook["strengths"]
-
-                    if strengths:
-                        for item in strengths:
-                            st.success(item)
-                    else:
-                        st.info("No major strengths identified.")
-
-                with right_column:
-                    st.markdown("### Risks")
-
-                    risks = outlook["risks"]
-
-                    if risks:
-                        for item in risks:
-                            st.warning(item)
-                    else:
-                        st.info("No major risks identified.")
-
-                st.markdown("### Price Range")
-
-                price_1, price_2, price_3 = st.columns(3)
-
-                price_1.metric(
-                    "Start Price",
-                    price["start_price"],
-                )
-                price_2.metric(
-                    "52-Week High",
-                    price["highest_price"],
-                )
-                price_3.metric(
-                    "52-Week Low",
-                    price["lowest_price"],
-                )
-
-            with ai_tab:
-                st.subheader("AI Financial Analysis")
-                st.markdown(data["ai_analysis"])
-
-            with report_tab:
-                st.subheader("Complete Research Report")
-                st.text(result["summary"])
-
-st.divider()
-
-st.header("Ask the 10-K")
-
-st.caption(
-    "Ask questions about Apple's 2025 Form 10-K using the local RAG system."
-)
-
-rag_query = st.text_input(
-    "Question about the document",
-    placeholder="What are Apple's main business risks?",
-    key="rag_query",
-)
-
-ask_button = st.button(
-    "Ask Document",
-    use_container_width=True,
-)
-
-if ask_button:
-    if not rag_query.strip():
-        st.warning("Please enter a question.")
-    else:
-        with st.spinner(
-            "Searching the document and generating an answer..."
-        ):
-            rag_result = answer_question(
-                query=rag_query,
-                top_k=5,
-            )
-
-        st.subheader("Answer")
-        st.markdown(rag_result["answer"])
-
-        st.subheader("Sources")
-
-        if rag_result["sources"]:
-            for source in rag_result["sources"]:
-                st.write(
-                    f"Page {source['page_number']} "
-                    f"— similarity distance: {source['distance']:.4f}"
-                )
-        else:
-            st.info("No sources found.")
