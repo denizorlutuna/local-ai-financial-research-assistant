@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 from app.ai.research_assistant import process_query
+from app.rag.document_indexer import index_document
 
 
 st.set_page_config(
@@ -28,6 +29,62 @@ st.caption(
 
 st.divider()
 
+st.subheader("Upload Financial Document")
+
+uploaded_file = st.file_uploader(
+    "Upload a PDF report",
+    type=["pdf"],
+)
+
+if uploaded_file is not None:
+    documents_dir = PROJECT_ROOT / "documents"
+    documents_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    file_path = documents_dir / uploaded_file.name
+
+    if (
+        st.session_state.get("indexed_document")
+        != uploaded_file.name
+    ):
+        with open(file_path, "wb") as file:
+            file.write(uploaded_file.getbuffer())
+
+        try:
+            with st.spinner(
+                "Indexing document and creating embeddings..."
+            ):
+                index_result = index_document(
+                    file_path=file_path,
+                    document_name=uploaded_file.name,
+                )
+
+            st.session_state["indexed_document"] = (
+                uploaded_file.name
+            )
+
+            st.success(
+                f"{index_result['document_name']} indexed successfully. "
+                f"{index_result['page_count']} pages and "
+                f"{index_result['chunk_count']} chunks processed."
+            )
+
+        except Exception as error:
+            st.error(
+                f"Unable to index document: {error}"
+            )
+
+active_document = st.session_state.get(
+    "indexed_document"
+)
+
+if active_document:
+    st.caption(
+        f"Active document: {active_document}"
+    )
+
 st.subheader("Ask the Financial Assistant")
 
 query = st.text_input(
@@ -36,15 +93,6 @@ query = st.text_input(
         "How risky is NVIDIA? "
         "What does P/E ratio mean? "
         "What risks are discussed in this report?"
-    ),
-)
-
-document_name = st.text_input(
-    "Document name (optional)",
-    placeholder="microsoft_10k_2025.pdf",
-    help=(
-        "Use this when your question refers to a specific "
-        "document already indexed in the RAG system."
     ),
 )
 
@@ -63,7 +111,7 @@ if ask_button:
             with st.spinner("Analyzing your question..."):
                 result = process_query(
                     query=query,
-                    document_name=document_name.strip() or None,
+                    document_name=active_document,
                 )
 
             route = result.get("route", "unknown")
