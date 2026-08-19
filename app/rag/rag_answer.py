@@ -36,16 +36,20 @@ Answer the user's question using only the document context below.
 Instructions:
 
 - Give a direct and concise answer.
-- Identify all major risks supported by the context.
+- Answer using only information supported by the document context.
 - Summarize the main points instead of copying the context.
 - Do not invent information.
 - Ignore irrelevant context.
 - Mention uncertainty if the context is insufficient.
-- Use bullet points when appropriate.
-- After each important point, cite the source page like [Page 14].
-- Do not give personal investment advice.
-- Cite relevant pages inline like [Page 8].
+- When listing multiple points, use Markdown bullet points.
+- Put every bullet point on a separate line.
+- Start each bullet point with "- ".
+- Do not place multiple bullet points on the same line.
+- Keep each bullet point concise and readable.
+- Cite the relevant source page at the end of each important point,
+  for example: [Page 14].
 - Do not create a separate Sources section.
+- Do not give personal investment advice.
 
 Question:
 {query}
