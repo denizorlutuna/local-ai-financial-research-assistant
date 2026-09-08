@@ -52,12 +52,45 @@ def process_query(
         }
 
     if route == "general":
+        history_text = ""
+
+        if conversation_history:
+            recent_messages = conversation_history[-6:]
+
+            history_parts = []
+
+            for message in recent_messages:
+                role = message.get("role", "unknown")
+                content = message.get("content", "")
+
+                history_parts.append(
+                    f"{role}: {content}"
+                )
+
+            history_text = "\n".join(history_parts)
+
         prompt = f"""
 You are a financial research assistant.
 
-Answer the following question clearly and concisely.
+Answer the user's current question clearly and concisely.
 
-Question:
+The current question may be a follow-up to the previous conversation.
+
+Use the conversation history only when necessary to understand
+references such as:
+- it
+- this
+- that
+- this concept
+- that ratio
+- this metric
+
+Do not invent facts from the conversation history.
+
+Conversation History:
+{history_text if history_text else "No previous conversation."}
+
+Current Question:
 {query}
 """
 
