@@ -31,6 +31,13 @@ st.divider()
 
 st.subheader("Upload Financial Document")
 
+if "indexed_documents" not in st.session_state:
+    st.session_state["indexed_documents"] = []
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+
 uploaded_file = st.file_uploader(
     "Upload a PDF report",
     type=["pdf"],
@@ -46,8 +53,8 @@ if uploaded_file is not None:
     file_path = documents_dir / uploaded_file.name
 
     if (
-        st.session_state.get("indexed_document")
-        != uploaded_file.name
+        uploaded_file.name
+        not in st.session_state["indexed_documents"]
     ):
         with open(file_path, "wb") as file:
             file.write(uploaded_file.getbuffer())
@@ -61,7 +68,7 @@ if uploaded_file is not None:
                     document_name=uploaded_file.name,
                 )
 
-            st.session_state["indexed_document"] = (
+            st.session_state["indexed_documents"].append(
                 uploaded_file.name
             )
 
@@ -76,16 +83,34 @@ if uploaded_file is not None:
                 f"Unable to index document: {error}"
             )
 
-active_document = st.session_state.get(
-    "indexed_document"
-)
 
-if active_document:
-    st.caption(
-        f"Active document: {active_document}"
+indexed_documents = st.session_state[
+    "indexed_documents"
+]
+
+active_document = None
+
+if indexed_documents:
+    active_document = st.selectbox(
+        "Active Document",
+        options=indexed_documents,
+        index=len(indexed_documents) - 1,
     )
 
+    st.caption(
+        f"Questions about uploaded reports will use: "
+        f"{active_document}"
+    )
+
+
 st.subheader("Ask the Financial Assistant")
+
+
+# Display previous conversation messages
+for message in st.session_state["messages"]:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
 
 query = st.text_input(
     "Question",
@@ -102,11 +127,20 @@ ask_button = st.button(
     use_container_width=True,
 )
 
+
 if ask_button:
     if not query.strip():
         st.warning("Please enter a question.")
 
     else:
+        # Save user message
+        st.session_state["messages"].append(
+            {
+                "role": "user",
+                "content": query,
+            }
+        )
+
         try:
             with st.spinner("Analyzing your question..."):
                 result = process_query(
@@ -116,6 +150,19 @@ if ask_button:
 
             route = result.get("route", "unknown")
 
+            answer = result.get(
+                "answer",
+                "No answer was generated.",
+            )
+
+            # Save assistant message
+            st.session_state["messages"].append(
+                {
+                    "role": "assistant",
+                    "content": answer,
+                }
+            )
+
             st.success("Analysis completed.")
 
             st.caption(
@@ -124,12 +171,8 @@ if ask_button:
 
             st.subheader("Answer")
 
-            answer = result.get(
-                "answer",
-                "No answer was generated.",
-            )
-
             st.markdown(answer)
+
 
             if route == "market_data":
                 ticker = result.get("ticker")
@@ -283,6 +326,7 @@ if ask_button:
                             ),
                         )
 
+
                     with financial_tab:
                         health_1, health_2, health_3 = (
                             st.columns(3)
@@ -332,6 +376,7 @@ if ask_button:
                                     "No major strengths identified."
                                 )
 
+
                         with right_column:
                             st.markdown("### Risks")
 
@@ -347,6 +392,7 @@ if ask_button:
                                 st.info(
                                     "No major risks identified."
                                 )
+
 
             if route == "rag":
                 sources = result.get(
@@ -390,6 +436,7 @@ if ask_button:
                     st.info(
                         "No sources were returned."
                     )
+
 
         except Exception as error:
             st.error(
