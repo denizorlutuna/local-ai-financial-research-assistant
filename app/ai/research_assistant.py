@@ -42,6 +42,7 @@ def process_query(
             query=query,
             top_k=top_k,
             document_name=document_name,
+            conversation_history=conversation_history,
         )
 
         return {

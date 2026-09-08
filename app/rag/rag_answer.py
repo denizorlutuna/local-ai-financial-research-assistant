@@ -6,9 +6,52 @@ def answer_question(
     query,
     top_k=5,
     document_name=None,
+    conversation_history=None,
 ):
+    history_text = ""
+
+    if conversation_history:
+        recent_messages = conversation_history[-6:]
+
+        history_parts = []
+
+        for message in recent_messages:
+            role = message.get("role", "unknown")
+            content = message.get("content", "")
+
+            history_parts.append(
+                f"{role}: {content}"
+            )
+
+        history_text = "\n".join(history_parts)
+
+    retrieval_query = query
+
+    if history_text:
+        rewrite_prompt = f"""
+You rewrite follow-up questions for document retrieval.
+
+Use the conversation history to turn the current question into
+a standalone question that can be understood without the previous
+conversation.
+
+Keep the original meaning.
+Do not answer the question.
+Return ONLY the rewritten question.
+
+Conversation History:
+{history_text}
+
+Current Question:
+{query}
+"""
+
+        retrieval_query = generate_response(
+            rewrite_prompt
+        ).strip()
+
     results = search_similar_chunks(
-        query,
+        retrieval_query,
         top_k=top_k,
         document_name=document_name,
     )
@@ -31,16 +74,18 @@ def answer_question(
     prompt = f"""
 You are a financial document research assistant.
 
-Answer the user's question using only the document context below.
+Answer the user's current question using only the document context below.
 
 Instructions:
 
 - Give a direct and concise answer.
 - Answer using only information supported by the document context.
+- Use the conversation history only to understand the current question.
+- Do not treat unsupported claims from the conversation history as facts.
 - Summarize the main points instead of copying the context.
 - Do not invent information.
 - Ignore irrelevant context.
-- Mention uncertainty if the context is insufficient.
+- Mention uncertainty if the document context is insufficient.
 - When listing multiple points, use Markdown bullet points.
 - Put every bullet point on a separate line.
 - Start each bullet point with "- ".
@@ -51,7 +96,10 @@ Instructions:
 - Do not create a separate Sources section.
 - Do not give personal investment advice.
 
-Question:
+Conversation History:
+{history_text if history_text else "No previous conversation."}
+
+Current Question:
 {query}
 
 Document Context:
