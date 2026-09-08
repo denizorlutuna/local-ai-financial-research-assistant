@@ -10,8 +10,12 @@ def process_query(
     query: str,
     document_name: str | None = None,
     top_k: int = 5,
+    conversation_history: list | None = None,
 ):
-    route = route_query(query)
+    route = route_query(
+        query=query,
+        conversation_history=conversation_history,
+    )
 
     if route == "market_data":
         ticker = resolve_ticker(query)

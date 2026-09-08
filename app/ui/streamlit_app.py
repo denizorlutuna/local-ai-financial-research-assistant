@@ -106,7 +106,6 @@ if indexed_documents:
 st.subheader("Ask the Financial Assistant")
 
 
-# Display previous conversation messages
 for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -133,7 +132,8 @@ if ask_button:
         st.warning("Please enter a question.")
 
     else:
-        # Save user message
+        conversation_history = st.session_state["messages"].copy()
+
         st.session_state["messages"].append(
             {
                 "role": "user",
@@ -146,6 +146,7 @@ if ask_button:
                 result = process_query(
                     query=query,
                     document_name=active_document,
+                    conversation_history=conversation_history,
                 )
 
             route = result.get("route", "unknown")
@@ -155,7 +156,6 @@ if ask_button:
                 "No answer was generated.",
             )
 
-            # Save assistant message
             st.session_state["messages"].append(
                 {
                     "role": "assistant",
