@@ -18,7 +18,10 @@ def process_query(
     )
 
     if route == "market_data":
-        ticker = resolve_ticker(query)
+        ticker = resolve_ticker(
+            query=query,
+            conversation_history=conversation_history,
+        )
 
         research_result = start_research(ticker)
 
